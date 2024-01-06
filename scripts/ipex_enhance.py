@@ -16,16 +16,19 @@ def ipex_optimize(sd_model):
         sd_model.to(devices.device)
 
     if sd_model.device.type == "xpu":
-        ipex.optimize(
-            sd_model,
-            dtype=devices.dtype_unet,
-            inplace=True,
-            # conv_bn_folding=False,
-            linear_bn_folding=True,
-            # weights_prepack=False,
-            # graph_mode=True,
-        )
-        log("Applied IPEX optimize.")
+        try:
+            ipex.optimize(
+                sd_model,
+                dtype=devices.dtype_unet,
+                inplace=True,
+                # conv_bn_folding=False,
+                linear_bn_folding=True,
+                # weights_prepack=False,
+                # graph_mode=True,
+            )
+            log("Applied IPEX optimize.")
+        except Exception:
+            log("Warning: couldn't apply IPEX optimize because part of SD model is mapped to CPU")
 
 
 if devices.has_xpu():
