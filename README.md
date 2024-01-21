@@ -12,3 +12,4 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
   - normal_bae
   - mlsd
   - seg_anime_face, seg_ofade20k, seg_ofcoco, seg_ufade20k
+- Offload `torchvision.ops.nms` to XPU, to W/A flaky Access Violation when using [adetailer](https://github.com/Bing-su/adetailer) with `torchvision==0.15.2a0+fa99a53`.
