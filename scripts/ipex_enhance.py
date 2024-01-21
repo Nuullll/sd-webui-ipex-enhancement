@@ -1,4 +1,5 @@
 from modules import script_callbacks, devices
+from modules.sd_hijack_utils import CondFunc
 from ipex_hijack import log
 from ipex_hijack.controlnet import apply_controlnet_hijacks
 
@@ -31,8 +32,17 @@ def ipex_optimize(sd_model):
             log("Warning: couldn't apply IPEX optimize because part of SD model is mapped to CPU")
 
 
+def apply_general_hijacks():
+    CondFunc('torchvision.ops.nms',
+        lambda orig_func, boxes, scores, iou_thresold: orig_func(boxes.to(devices.get_optimal_device()), scores.to(devices.get_optimal_device()), iou_thresold).to(boxes.device),
+        lambda orig_func, boxes, scores, _: not boxes.is_xpu or not scores.is_xpu)
+
+    log("Registered hijacks for IPEX")
+
+
 if devices.has_xpu():
     script_callbacks.on_model_loaded(ipex_optimize)
     log("Registered IPEX model optimize callback")
 
+    apply_general_hijacks()
     apply_controlnet_hijacks()
