@@ -34,7 +34,7 @@ def ipex_optimize(sd_model):
 
 def apply_general_hijacks():
     CondFunc('torchvision.ops.nms',
-        lambda orig_func, boxes, scores, iou_thresold: orig_func(boxes.to(devices.get_optimal_device()), scores.to(devices.get_optimal_device()), iou_thresold).to(boxes.device),
+        lambda orig_func, boxes, scores, iou_threshold: orig_func(boxes.to(devices.get_optimal_device()), scores.to(devices.get_optimal_device()), iou_threshold).to(boxes.device),
         lambda orig_func, boxes, scores, _: not boxes.is_xpu or not scores.is_xpu)
 
     log("Registered hijacks for IPEX")
