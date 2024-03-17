@@ -10,12 +10,6 @@ if devices.has_xpu():
 
 
 def ipex_optimize(sd_model):
-    # SD WebUI runs model_loaded_callback before moving to target device.
-    # W/A: Move to xpu before applying ipex.optimize
-    # TODO: Fix SD WebUI
-    if not sd_model.lowvram:
-        sd_model.to(devices.device)
-
     if sd_model.device.type == "xpu":
         try:
             ipex.optimize(
@@ -36,6 +30,12 @@ def apply_general_hijacks():
     CondFunc('torchvision.ops.nms',
         lambda orig_func, boxes, scores, iou_threshold: orig_func(boxes.to(devices.get_optimal_device()), scores.to(devices.get_optimal_device()), iou_threshold).to(boxes.device),
         lambda orig_func, boxes, scores, iou_threshold: not boxes.is_xpu or not scores.is_xpu)
+
+    # IPEX: incorrect batch_norm result with XPU fp32, downcast to fp16 instead
+    # TODO: file an issue to IPEX
+    CondFunc('torch.nn.functional.batch_norm',
+        lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: orig_func(input.half(), running_mean.half(), running_var.half(), weight=weight.half() if weight is not None else None, bias=bias.half() if bias is not None else None, training=training, momentum=momentum, eps=eps).to(input.dtype),
+        lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: input.device.type == 'xpu' and input.dtype == torch.float)
 
     log("Registered hijacks for IPEX")
 

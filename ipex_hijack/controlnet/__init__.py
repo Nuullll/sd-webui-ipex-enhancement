@@ -3,30 +3,6 @@ from ipex_hijack import log, hijack_message
 from modules import devices
 
 
-# Adapted from https://github.com/Mikubill/sd-webui-controlnet/blob/4cf15d1c9c565b8d0c5f782a89c5a6286dc6e6ff/annotator/leres/leres/depthmap.py#L34
-@hijack_message("Offloading estimateleres() to cpu")
-def estimateleres_cpu(img, model, w, h):
-    from annotator.leres.leres.depthmap import torch, cv2, scale_torch
-
-    # leres transform input
-    rgb_c = img[:, :, ::-1].copy()
-    A_resize = cv2.resize(rgb_c, (w, h))
-    img_torch = scale_torch(A_resize)[None, :, :, :]
-
-    # compute
-    model.to(devices.cpu)
-    with torch.no_grad():
-        img_torch = img_torch.to(devices.cpu)
-        prediction = model.depth_model(img_torch)
-
-    prediction = prediction.squeeze().cpu().numpy()
-    prediction = cv2.resize(
-        prediction, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC
-    )
-
-    return prediction
-
-
 @hijack_message("Offloading annotator model to cpu")
 def override_annotator_model_device(orig_func, self, *args, **kwargs):
     orig_func(self, *args, **kwargs)
@@ -82,16 +58,6 @@ def pred_lines_cpu(image, model,
 def apply_controlnet_hijacks():
     def is_controlnet_device_xpu(*args, **kwargs):
         return devices.get_device_for("controlnet").type == "xpu"
-
-    for func in [
-        "annotator.leres.leres.depthmap.estimateleres",  # depth_leres++
-        "annotator.leres.estimateleres",  # depth_leres
-    ]:
-        CondFunc(
-            func,
-            lambda _, *args, **kwargs: estimateleres_cpu(*args, **kwargs),
-            is_controlnet_device_xpu,
-        )
 
     for func in [
         "annotator.manga_line.MangaLineExtration.__init__",  # lineart_anime_denoise
