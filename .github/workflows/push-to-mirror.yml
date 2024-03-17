@@ -1,0 +1,27 @@
+name: Push to Gitcode
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: pandoc/latex    # "ubuntu" is a more generic container
+                               # using "pandoc/latex" because of dependencies
+                               # used in the specific "build.sh"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pushes to Gitcode
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITCODE_MIRROR_ACCESS_TOKEN }}
+        with:
+          source-directory: '.'
+          destination-repository-username: 'Nuullll'
+          github-server: 'gitcode.net'
+          destination-repository-name: 'sd-webui-ipex-enhancement-mirror'
+          user-email: vfirst218@gmail.com
+          target-branch: main
