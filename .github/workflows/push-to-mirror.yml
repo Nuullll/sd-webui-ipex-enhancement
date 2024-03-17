@@ -24,4 +24,5 @@ jobs:
           github-server: 'gitcode.net'
           destination-repository-name: 'sd-webui-ipex-enhancement-mirror'
           user-email: vfirst218@gmail.com
+          user-name: Nuullll
           target-branch: main
