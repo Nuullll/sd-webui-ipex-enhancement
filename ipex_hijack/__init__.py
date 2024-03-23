@@ -1,4 +1,5 @@
 import functools
+import torch
 
 
 def log(msg):
@@ -20,6 +21,9 @@ def hijack_message(msg=""):
 def asfp16(v):
     return v.to(torch.half) if v is not None else None
 
+
+def asfp32(v):
+    return v.to(torch.float) if v is not None else None
 
 def astype(v, type):
     return v.to(type) if v is not None else None
