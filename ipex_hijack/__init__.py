@@ -15,3 +15,11 @@ def hijack_message(msg=""):
         
         return wrapper
     return decorator
+
+
+def asfp16(v):
+    return v.to(torch.half) if v is not None else None
+
+
+def astype(v, type):
+    return v.to(type) if v is not None else None
