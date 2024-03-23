@@ -1,6 +1,6 @@
 from modules import script_callbacks, devices
 from modules.sd_hijack_utils import CondFunc
-from ipex_hijack import log, asfp16
+from ipex_hijack import log, asfp16, asfp32
 from ipex_hijack.controlnet import apply_controlnet_hijacks
 
 
@@ -42,6 +42,11 @@ def apply_general_hijacks():
     CondFunc('torch.nn.functional.interpolate',
         lambda orig_func, input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False: orig_func(input.cpu(), size, scale_factor, mode, align_corners, recompute_scale_factor, antialias).to(input.device),
         lambda orig_func, input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False: input.device.type == 'xpu' and align_corners)
+
+    # Fixes ipadapter on CPU
+    CondFunc('torch.nn.functional.linear',
+        lambda orig_func, input, weight, bias: orig_func(input.float(), asfp32(weight), asfp32(bias)).half(),
+        lambda orig_func, input, weight, bias: input.device.type == 'cpu' and input.dtype == torch.half)
 
     log("Registered hijacks for IPEX")
 
