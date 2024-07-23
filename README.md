@@ -6,7 +6,9 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
 
 - Apply [`ipex.optimize`](https://intel.github.io/intel-extension-for-pytorch/latest/tutorials/api_doc.html) upon model loading.
 - Fix `torch.nn.functional.batch_norm` for XPU fp32, IPEX < 2.1.30
-  + Known impact: controlnet annotators depth_leres, depth_leres++
+  + Known impact: controlnet annotator depth_leres, depth_leres++
+- Fix `torch.nn.functional.interpolate` for XPU when `align_corners=True`, IPEX < 2.1.30
+  + Known impact: controlnet annotator MLSD
 - Offload the following **controlnet annotators** to CPU, as IPEX XPU backend doesn't work as expected.
   - lineart_anime_denoise
   - inpaint_only+lama
