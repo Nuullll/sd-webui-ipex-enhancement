@@ -14,7 +14,6 @@ def apply_controlnet_hijacks():
         return devices.get_device_for("controlnet").type == "xpu"
 
     for func in [
-        "annotator.manga_line.MangaLineExtration.__init__",  # lineart_anime_denoise
         "annotator.lama.LamaInpainting.__init__",  # inpaint_only+lama
         "annotator.normalbae.NormalBaeDetector.__init__", # normal_bae
         "annotator.anime_face_segment.AnimeFaceSegment.__init__", # seg_anime_face
