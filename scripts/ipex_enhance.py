@@ -2,11 +2,14 @@ from modules import script_callbacks, devices
 from modules.sd_hijack_utils import CondFunc
 from ipex_hijack import log, asfp16, asfp32
 from ipex_hijack.controlnet import apply_controlnet_hijacks
+from pkg_resources import parse_version
 
 
 if devices.has_xpu():
     import torch
     import intel_extension_for_pytorch as ipex
+    ipex_ver = parse_version(ipex.__version__)
+    log(f"Using IPEX version: {ipex_ver}")
 
 
 def ipex_optimize(sd_model):
@@ -32,10 +35,11 @@ def apply_general_hijacks():
         lambda orig_func, boxes, scores, iou_threshold: not boxes.is_xpu or not scores.is_xpu)
 
     # IPEX: incorrect batch_norm result with XPU fp32, downcast to fp16 instead
-    # TODO: file an issue to IPEX
-    CondFunc('torch.nn.functional.batch_norm',
-        lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: orig_func(input.half(), asfp16(running_mean), asfp16(running_var), weight=asfp16(weight), bias=asfp16(bias), training=training, momentum=momentum, eps=eps).to(input.dtype),
-        lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: input.device.type == 'xpu' and input.dtype == torch.float)
+    # The issue has been fixed since IPEX 2.1.30
+    if ipex_ver < parse_version('2.1.30'):
+        CondFunc('torch.nn.functional.batch_norm',
+            lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: orig_func(input.half(), asfp16(running_mean), asfp16(running_var), weight=asfp16(weight), bias=asfp16(bias), training=training, momentum=momentum, eps=eps).to(input.dtype),
+            lambda orig_func, input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-05: input.device.type == 'xpu' and input.dtype == torch.float)
     
     # IPEX: incorrect interpolate result with XPU when align_corner=True, move to cpu instead
     # TODO: file an issue to IPEX
