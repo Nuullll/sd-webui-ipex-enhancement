@@ -20,7 +20,7 @@ def ipex_optimize(sd_model):
                 dtype=devices.dtype_unet,
                 inplace=True,
                 # conv_bn_folding=False,
-                linear_bn_folding=True,
+                # linear_bn_folding=True,
                 # weights_prepack=False,
                 # graph_mode=True,
             )
@@ -52,6 +52,12 @@ def apply_general_hijacks():
     CondFunc('torch.nn.functional.linear',
         lambda orig_func, input, weight, bias: orig_func(input.float(), asfp32(weight), asfp32(bias)).half(),
         lambda orig_func, input, weight, bias: input.device.type == 'cpu' and input.dtype == torch.half)
+
+    if ipex_ver >= parse_version('2.5'):
+        # disable sdpa workaround for IPEX >= 2.5
+        log("IPEX version >= 2.5, disable sdpa workaround")
+        import modules.xpu_specific
+        modules.xpu_specific.torch_xpu_scaled_dot_product_attention = modules.xpu_specific.orig_sdp_attn_func
 
     log("Registered hijacks for IPEX")
 
